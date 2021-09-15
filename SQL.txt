@@ -1,0 +1,136 @@
+ANIMAL_OUTS에만 있는 것 조회(ANIMAL_INS에는 ID 부분을 추출)
+
+SELECT
+	ANIMAL_ID, 
+	NAME 
+FROM ANIMAL_OUTS
+WHERE ANIMAL_ID NOT IN(SELECT ANIMAL_ID FROM ANIMAL_INS);
+*주요 문법: NOT IN - where절에서 조건을 추가하여 처리합니다.
+
+ 
+
+
+두 테이블 비교 후 조건 처리(날짜가 유효하지 않으면 출력)
+
+SELECT 
+	o.ANIMAL_ID, 
+	o.NAME
+FROM ANIMAL_OUTS o 
+LEFT JOIN ANIMAL_INS i ON o.ANIMAL_ID = i.ANIMAL_ID
+WHERE o.DATETIME < i.DATETIME
+ORDER BY i.DATETIME
+*from 이후 테이블을 left로 보고 left join 문법을 사용하여 on이후 일치 조건과 where절 이후 비교조건을 처리합니다.
+
+ 
+
+
+안에 들어있는 것만 추출
+
+SELECT 
+	ANIMAL_ID, 
+	NAME, 
+	SEX_UPON_INTAKE 
+FROM ANIMAL_INS 
+WHERE NAME IN ("Lucy", "Ella", "Pickle", "Rogan", "Sabrina", "Mitty");
+*where절 조건을 저리할 때 해당 필드 In (목록)을 통해 목록에 해당 튜플만 추출합니다.
+
+
+
+특정자료를 변형하여 추출(날짜 필드를 DATE_FORMAT함수를 사용하여 특정형태로 바꿔줍니다.)
+
+SELECT 
+	ANIMAL_ID, 
+	NAME, 
+	DATE_FORMAT(DATETIME,"%Y-%m-%d") AS 날짜 
+FROM ANIMAL_INS
+ORDER BY ANIMAL_ID;
+*select 이후 추출할 필드들을 형태를 변형하는 방식을 사용합니다.
+
+ 
+
+
+포함된 문자 추출(해당필드의 조건들을 처리하여 추출)
+
+SELECT 
+	ANIMAL_ID, 
+	NAME 
+FROM ANIMAL_INS 
+WHERE ANIMAL_TYPE = "Dog" AND UPPER(NAME) LIKE UPPER("%el%")
+ORDER BY NAME
+*조건을 AND를 통해 처리해 줍니다. 또한 LIKE를 통해 %문자일부%를 포함하는지 확인하여 처리합니다.
+
+ 
+
+
+한쪽에 없는 자료 추출(자료가 들어왔지만 나가는 자료가 없는 것을 추출)
+
+SELECT 
+	i.NAME, 
+	i.DATETIME 
+FROM ANIMAL_INS i
+LEFT JOIN ANIMAL_OUTS o ON i.ANIMAL_ID = o.ANIMAL_ID
+WHERE o.ANIMAL_ID IS NULL
+ORDER BY i.DATETIME
+LIMIT 3;
+*LEFT JOIN을 사용하여 left 기준으로 조인을 처리해여 IS NULL을 통해 왼쪽 테이블에 없는 자료를 추출합니다.
+
+
+특정 형태 변형 추출
+
+SELECT
+    animal_id,
+    name,
+    CASE WHEN sex_upon_intake LIKE '%Neutered%' OR sex_upon_intake LIKE '%Spayed%' 
+    THEN 'O' ELSE 'X' 
+    END 중성화
+FROM 
+animal_ins
+ORDER BY animal_id;
+*CASE WHEN 조건을 만족하는 자료에 대해 THEN 맞다면 'O'표시, 맞지 않다면 'X'를 추출합니다.
+
+
+
+기간 계산을 통해 최대, 최소 추출
+
+SELECT 
+	i.animal_id, 
+	i.name
+FROM animal_ins i
+INNER JOIN animal_outs o ON i.animal_id = o.animal_id
+ORDER BY (o.datetime - i.datetime) DESC
+LIMIT 2;
+*inner join 을 통해 두 테이블에 동시에 해당하는 필드 자료를 동시에 추출하는 조건을 처리합니다.
+
+
+고정된 범위에서 추출하기
+
+WITH RECURSIVE TIMETABLE(HOUR) AS (
+    SELECT 0
+    UNION
+    SELECT TIMETABLE.HOUR + 1 FROM TIMETABLE WHERE TIMETABLE.HOUR < 23
+)
+
+SELECT 
+	HOUR, 
+	COUNT(A.ANIMAL_ID)
+FROM TIMETABLE AS T 
+LEFT JOIN ANIMAL_OUTS AS A ON T.HOUR = HOUR(A.DATETIME)
+GROUP BY HOUR
+ORDER BY HOUR
+*with recursive를 통해 자료 범위를 변형시켜줍니다.
+
+ 
+
+
+두 테이블 간 변화를 확인후 추출하기
+
+SELECT 
+	i.ANIMAL_ID, 
+	i.ANIMAL_TYPE, 
+	i.NAME
+FROM ANIMAL_INS AS i
+INNER JOIN ANIMAL_OUTS AS o ON i.ANIMAL_ID = o.ANIMAL_ID
+WHERE i.SEX_UPON_INTAKE IN ('Intact Female', 'Intact Male') 
+AND  o.SEX_UPON_OUTCOME IN ('Spayed Female', 'Neutered Male')
+ORDER BY i.ANIMAL_ID;
+*inner join 을 통해 두 테이블 간에 자료처리를 진행합니다.
